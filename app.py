@@ -1,21 +1,21 @@
 from flask import Flask, request, send_file, render_template_string
 from PIL import Image
 import io
+import os
 
 app = Flask(__name__)
 
-# Map file extensions to proper Pillow format names
+# Map file extensions to Pillow format names
 format_map = {
     "jpg": "JPEG",
     "jpeg": "JPEG",
     "png": "PNG",
     "webp": "WEBP",
-    "avif": "AVIF"  # May not be supported on all systems
+    "avif": "AVIF"  # Note: AVIF support depends on your Pillow version and system
 }
 
 @app.route('/')
 def home():
-    # Load the HTML page from file
     with open("index.html", "r") as file:
         return render_template_string(file.read())
 
@@ -31,7 +31,7 @@ def convert_image():
         img = Image.open(image_file)
         output_format = format_map[target_format]
 
-        # Handle transparency for JPEGs
+        # Handle transparency for JPEG output
         if output_format == "JPEG":
             if img.mode in ("RGBA", "LA"):
                 background = Image.new("RGB", img.size, (255, 255, 255))  # white background
@@ -43,7 +43,6 @@ def convert_image():
             if img.mode not in ("RGB", "RGBA"):
                 img = img.convert("RGBA")
 
-        # Save image to a BytesIO buffer (in-memory file)
         buffer = io.BytesIO()
         img.save(buffer, format=output_format)
         buffer.seek(0)
@@ -61,4 +60,5 @@ def convert_image():
         return f"Error during conversion: {str(e)}", 500
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host='0.0.0.0', port=port)
